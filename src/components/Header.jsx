@@ -1,23 +1,68 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import "../i18n"; // เรียกใช้ config ภาษา
+import "../i18n";
 
 const Header = () => {
   const [lang, setLang] = useState("th");
   const [showSearch, setShowSearch] = useState(false);
   const [searchInput, setSearchInput] = useState("");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { t, i18n } = useTranslation();
 
   const toggleLanguage = () => {
     const newLang = lang === "th" ? "en" : "th";
     setLang(newLang);
-    i18n.changeLanguage(newLang); // ✅ เปลี่ยนภาษาในระบบจริง
+    i18n.changeLanguage(newLang);
   };
 
-  const toggleSearch = () => {
-    setShowSearch((prev) => !prev);
-  };
+  const toggleSearch = () => setShowSearch((prev) => !prev);
+  const toggleMobileMenu = () => setIsMobileMenuOpen((prev) => !prev);
+
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.innerHTML = `
+      @media (max-width: 768px) {
+        .nav {
+          display: ${isMobileMenuOpen ? "flex" : "none"} !important;
+          flex-direction: column;
+          background: #1e1e1e;
+          position: absolute;
+          top: 70px;
+          left: 0;
+          right: 0;
+          padding: 1rem;
+          gap: 1rem;
+          z-index: 9999; /* ✅ สำคัญมาก */
+        }
+
+        .search-toggle,
+        .lang-toggle {
+          font-size: 1rem !important;
+        }
+        .hamburger {
+          display: inline-block !important;
+        }
+      }
+      @media (min-width: 769px) {
+        .nav {
+          display: flex !important;
+          position: static !important;
+          flex-direction: row !important;
+          gap: 2rem !important;
+        }
+        .hamburger {
+          display: none !important;
+        }
+      }
+      a:hover {
+        color: #61dafb !important;
+        border-bottom: 2px solid #61dafb;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, [isMobileMenuOpen]);
 
   return (
     <header style={styles.header}>
@@ -27,14 +72,19 @@ const Header = () => {
         </Link>
       </div>
 
-      <nav style={styles.nav}>
-        <Link to="/" style={styles.link}>{t("HOME")}</Link>
-        <Link to="/lifestyles" style={styles.link}>{t("LIFESTYLES")}</Link>
-        <Link to="/psychology" style={styles.link}>{t("PSYCHOLOGY")}</Link>
-        <Link to="/self-development" style={styles.link}>{t("SELF_DEVELOPMENT")}</Link>
-        <Link to="/review" style={styles.link}>{t("REVIEW")}</Link>
-        <Link to="/about" style={styles.link}>{t("ABOUT")}</Link>
-      </nav>
+      <div className="hamburger" style={styles.hamburger} onClick={toggleMobileMenu}>
+        ☰
+      </div>
+
+      <nav className="nav" style={styles.nav}>
+  <Link to="/" style={styles.link}>{t("HOME")}</Link>
+  <Link to="/lifestyles" style={styles.link}>{t("LIFESTYLES")}</Link>
+  <Link to="/psychology" style={styles.link}>{t("PSYCHOLOGY")}</Link>
+  <Link to="/self-development" style={styles.link}>{t("SELF_DEVELOPMENT")}</Link>
+  <Link to="/review" style={styles.link}>{t("REVIEW")}</Link>
+  <Link to="/about" style={styles.link}>{t("ABOUT")}</Link>
+</nav>
+
 
       <div style={styles.actions}>
         {showSearch && (
@@ -46,8 +96,8 @@ const Header = () => {
             style={styles.searchInput}
           />
         )}
-        <span onClick={toggleSearch} style={styles.iconBtn}>🔍</span>
-        <span onClick={toggleLanguage} style={styles.langToggle}>
+        <span onClick={toggleSearch} className="search-toggle" style={styles.iconBtn}>🔍</span>
+        <span onClick={toggleLanguage} className="lang-toggle" style={styles.langToggle}>
           {lang.toUpperCase()}
         </span>
       </div>
@@ -66,7 +116,8 @@ const styles = {
     position: "sticky",
     top: 0,
     zIndex: 1000,
-    fontFamily: "'Barlow Condensed', sans-serif"
+    fontFamily: "'Barlow Condensed', sans-serif",
+    flexWrap: "wrap"
   },
   logoContainer: {
     display: "flex",
@@ -121,17 +172,12 @@ const styles = {
     backgroundColor: "#fff",
     color: "#000",
     fontSize: "0.9rem"
+  },
+  hamburger: {
+    fontSize: "1.5rem",
+    cursor: "pointer",
+    display: "none"
   }
 };
-
-// เพิ่ม hover ผ่าน style tag
-const styleElement = document.createElement("style");
-styleElement.innerHTML = `
-  a:hover {
-    color: #61dafb !important;
-    border-bottom: 2px solid #61dafb;
-  }
-`;
-document.head.appendChild(styleElement);
 
 export default Header;

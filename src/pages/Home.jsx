@@ -23,6 +23,36 @@ const Home = () => {
     fetchPosts();
   }, [selectedCategory]);
 
+  useEffect(() => {
+    // Inject responsive CSS
+    const style = document.createElement("style");
+    style.innerHTML = `
+      @media (max-width: 768px) {
+        .home-wrapper {
+          flex-direction: column !important;
+        }
+
+        .sidebar {
+          display: none !important;
+        }
+
+        .cardGrid {
+          grid-template-columns: 1fr !important;
+        }
+
+        .hero img {
+          height: 180px !important;
+        }
+
+        h2 {
+          font-size: 1.2rem;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
+
   const fetchPosts = async () => {
     const colRef = collection(db, "posts");
     const q = selectedCategory
@@ -36,20 +66,20 @@ const Home = () => {
 
   return (
     <div>
-      {/* รูปปกใหญ่ */}
-      <section style={styles.hero}>
+      {/* Hero Image */}
+      <section className="hero" style={styles.hero}>
         <img src="/hero.png" alt="cover" style={styles.heroImage} />
       </section>
 
-      {/* Content + Sidebar */}
-      <section style={styles.wrapper}>
+      {/* Main + Sidebar */}
+      <section className="home-wrapper" style={styles.wrapper}>
         <div style={styles.mainContent}>
           <h2>บทความ{selectedCategory ? `: ${selectedCategory}` : "ล่าสุด"}</h2>
 
           {posts.length === 0 ? (
             <p>ไม่มีบทความในหมวดนี้</p>
           ) : (
-            <div style={styles.cardGrid}>
+            <div className="cardGrid" style={styles.cardGrid}>
               {posts.map((post) => (
                 <div key={post.id} style={styles.card}>
                   {post.imageUrl && (
@@ -59,13 +89,13 @@ const Home = () => {
                     <h3 style={styles.cardTitle}>{post.title}</h3>
                     <small style={styles.category}>{post.category}</small>
                     <div
-                    style={styles.preview}
-                    dangerouslySetInnerHTML={{
+                      style={styles.preview}
+                      dangerouslySetInnerHTML={{
                         __html:
-                        post.content.length > 200
+                          post.content.length > 200
                             ? post.content.slice(0, 200) + "..."
                             : post.content
-                    }}
+                      }}
                     />
                     <button
                       style={styles.readMoreBtn}
@@ -80,8 +110,8 @@ const Home = () => {
           )}
         </div>
 
-        {/* Sidebar Categories */}
-        <aside style={styles.sidebar}>
+        {/* Sidebar */}
+        <aside className="sidebar" style={styles.sidebar}>
           <div style={styles.sidebarTitle}>CATEGORIES</div>
           {categories.map((cat, i) => (
             <div
