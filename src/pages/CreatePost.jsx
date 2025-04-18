@@ -17,7 +17,9 @@ const CreatePost = () => {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
   const [markdown, setMarkdown] = useState("");
+  const [image, setImage] = useState(null);
   const [error, setError] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
@@ -26,6 +28,26 @@ const CreatePost = () => {
     return () => unsub();
   }, [navigate]);
 
+  const uploadToImgur = async (file) => {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const res = await fetch("https://api.imgur.com/3/image", {
+      method: "POST",
+      headers: {
+        Authorization: "Client-ID b516f5a62e573cd", // 👈 ใช้ Client-ID ของคุณ
+      },
+      body: formData,
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      return data.data.link;
+    } else {
+      throw new Error("Upload failed");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title || !category || !markdown) {
@@ -33,13 +55,21 @@ const CreatePost = () => {
       return;
     }
 
+    setUploading(true);
+
     try {
       const htmlContent = marked.parse(markdown);
+      let imageUrl = "";
+
+      if (image) {
+        imageUrl = await uploadToImgur(image);
+      }
 
       await addDoc(collection(db, "posts"), {
         title,
         category,
         content: htmlContent,
+        imageUrl,
         createdAt: Timestamp.now()
       });
 
@@ -47,6 +77,8 @@ const CreatePost = () => {
     } catch (err) {
       console.error(err);
       setError("เกิดข้อผิดพลาดในการบันทึก");
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -64,22 +96,27 @@ const CreatePost = () => {
           style={styles.input}
         />
 
-        {/* ✅ หมวดหมู่แบบมีแนะนำ */}
-        <div style={{ position: "relative" }}>
-          <input
-            type="text"
-            placeholder="หมวดหมู่"
-            value={category}
-            onChange={(e) => setCategory(e.target.value.toUpperCase())}
-            style={styles.input}
-            list="category-options"
-          />
-          <datalist id="category-options">
-            {allCategories.map((cat, i) => (
-              <option key={i} value={cat} />
-            ))}
-          </datalist>
-        </div>
+        <input
+          type="text"
+          placeholder="หมวดหมู่ (LIFESTYLES, SELF DEVELOPMENT ฯลฯ)"
+          value={category}
+          onChange={(e) => setCategory(e.target.value.toUpperCase())}
+          style={styles.input}
+          list="category-options"
+        />
+        <datalist id="category-options">
+          {allCategories.map((cat, i) => (
+            <option key={i} value={cat} />
+          ))}
+        </datalist>
+
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => setImage(e.target.files[0])}
+          style={styles.input}
+        />
+        {image && <p>📸 เลือกไฟล์: {image.name}</p>}
 
         <textarea
           placeholder="เขียน Markdown ที่นี่..."
@@ -90,14 +127,16 @@ const CreatePost = () => {
         />
 
         <div>
-          <h3>🔍 ตัวอย่าง Preview:</h3>
+          <h3>🔍 Preview:</h3>
           <div
             style={styles.preview}
             dangerouslySetInnerHTML={{ __html: marked.parse(markdown) }}
           />
         </div>
 
-        <button type="submit" style={styles.button}>เผยแพร่</button>
+        <button type="submit" disabled={uploading} style={styles.button}>
+          {uploading ? "⏳ กำลังอัปโหลด..." : "✅ เผยแพร่"}
+        </button>
       </form>
     </div>
   );
